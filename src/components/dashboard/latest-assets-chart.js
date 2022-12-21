@@ -15,13 +15,13 @@ export const LatestAssetsChart = (props) => {
         barThickness: 20,
         borderRadius: 4,
         categoryPercentage: 0.5,
-        data: props.USD,
+        data: props.USDs,
         label: 'USD',
         maxBarThickness: 20,
         borderWidth: 1
       }
     ],
-    labels: ['2022-12-07', '2022-12-06', '2022-12-05', '2022-12-04', '2022-12-03', '2022-12-02', '2022-12-01']
+    labels: props.dates
   };
 
   const options = {
@@ -34,7 +34,7 @@ export const LatestAssetsChart = (props) => {
     scales: {      
       y: {
         beginAtZero: false,
-        min: Math.min(...props.USD) * 0.98
+        min: Math.min(...props.USDs) * 0.98
       }
     },
     tooltips: {
@@ -90,7 +90,7 @@ export const LatestAssetsChart = (props) => {
           endIcon={<ArrowRightIcon fontSize="small" />}
           size="small"
         >
-          Overview
+          View all
         </Button>
       </Box>
     </Card>

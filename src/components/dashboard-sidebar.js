@@ -21,9 +21,9 @@ const items = [
     title: 'Dashboard'
   },
   {
-    href: '/asset',
+    href: '/assets',
     icon: (<MonetizationOnIcon fontSize="small" />),
-    title: 'Asset'
+    title: 'Assets'
   },
   {
     href: '/account',

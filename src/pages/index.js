@@ -20,7 +20,9 @@ const Page = () => {
     USDT : {total : 0, profit : 0, ratio : 1},
     BUSD : {total : 0, profit : 0, ratio : 1}
   });
-  const [latestUSD, setLatestUSD] = useState([0, 0, 0, 0, 0, 0, 0]);
+  const [latestUSDs, setLatestUSDs] = useState([]);
+  const [latestDates, setLatestDates] = useState([]);
+  const [latestAssets, setLatestAssets] = useState([]);
 
   const handleServerSelect = (event, newFormats) => {
     setSelectedServers(newFormats);
@@ -36,50 +38,64 @@ const Page = () => {
       }
     }
 
-    var totalUSD = 0;
-    var totalUSDT = 0;
-    var totalBUSD = 0;
+    if (serverIds.length == 0) return;
 
-    var totalUSD2 = 0;
-    var totalUSDT2 = 0;
-    var totalBUSD2 = 0;
-
-    var latestUSD2 = [0, 0, 0, 0, 0, 0, 0];
+    var dates = ['', '', '', '', '', '', '', ''];
+    var USDs = [0, 0, 0, 0, 0, 0, 0, 0];
+    var USDTs = [0, 0, 0, 0, 0, 0, 0, 0];
+    var BUSDs = [0, 0, 0, 0, 0, 0, 0, 0];
     for (let server of servers)
     {
       if (selectedServers.indexOf(server.name) >= 0)
       {
-        var res = await axios.post(`http://${process.env.NEXT_PUBLIC_TBMB_IP}/get_balance_list`, {serverId : server.id, startIndex : 0, count : 7});
+        var res = await axios.post(`http://${process.env.NEXT_PUBLIC_TBMB_IP}/get_balance_list`, {serverId : server.id, startIndex : 0, count : 8});
         server.balances = res.data.datas
-
-        if (server.balances.length > 0)
-        {
-          totalUSDT += server.balances[0].USDT;
-          totalBUSD += server.balances[0].BUSD;          
-        }
-        if (server.balances.length > 1)
-        {
-          totalUSDT2 += server.balances[1].USDT;
-          totalBUSD2 += server.balances[1].BUSD;
-        }
 
         for (let i = 0; i < server.balances.length; i++)
         {
           let balance = server.balances[i];
-          latestUSD2[i] += balance.USDT + balance.BUSD;
+          dates[i] = balance.date;
+          USDTs[i] += balance.USDT;
+          BUSDs[i] += balance.BUSD;
+          USDs[i] += balance.USDT + balance.BUSD;
         }
       }
     }
-    totalUSD = totalUSDT + totalBUSD;
-    totalUSD2 = totalUSDT2 + totalBUSD2;
 
+    var latestAssets2 = [];
+    for (let i = 0; i < USDs.length - 1; i++)
+    {
+      let asset = {
+        date : dates[i],
+        totalUSD : USDs[i],
+        profitUSD : USDs[i] - USDs[i + 1],
+        ratioUSD : (USDs[i + 1] > 0) ? USDs[i] / USDs[i + 1] : 1,
+        totalUSDT : USDTs[i],
+        profitUSDT : USDTs[i] - USDTs[i + 1],
+        ratioUSDT : (USDTs[i + 1] > 0) ? USDTs[i] / USDTs[i + 1] : 1,
+        totalBUSD : BUSDs[i],
+        profitBUSD : BUSDs[i] - BUSDs[i + 1],
+        ratioBUSD : (BUSDs[i + 1] > 0) ? BUSDs[i] / BUSDs[i + 1] : 1
+      }
+      latestAssets2.push(JSON.parse(JSON.stringify(asset)));
+    }
+    
+    var a = latestAssets2[0];
     setTotalAsset({ 
-      USD : { total : totalUSD, profit : totalUSD - totalUSD2, ratio : (totalUSD2 > 0) ? totalUSD / totalUSD2 : 1},
-      USDT : { total : totalUSDT, profit : totalUSDT - totalUSDT2, ratio : (totalUSDT > 0) ? totalUSDT / totalUSDT2 : 1},
-      BUSD : { total : totalBUSD, profit : totalBUSD - totalBUSD, ratio : (totalBUSD > 0) ? totalBUSD / totalBUSD2 : 1}
-    });
+      USD : { total : a.totalUSD, profit : a.profitUSD, ratio : a.ratioUSD},
+      USDT : { total : a.totalUSDT, profit : a.profitUSDT, ratio : a.ratioUSDT},
+      BUSD : { total : a.totalBUSD, profit : a.profitBUSD, ratio : a.ratioBUSD}
+    });    
 
-    setLatestUSD(latestUSD2);
+    if (USDs.length > 7)
+    {
+      USDs.splice(7, 1);
+      dates.splice(7, 1);
+    } 
+    setLatestUSDs(USDs);
+    setLatestDates(dates);
+
+    setLatestAssets(latestAssets2);
   }
 
   const initialize = async () => {
@@ -207,7 +223,10 @@ const Page = () => {
               sm={12}
               xs={12}
             >
-              <LatestAssetsChart USD={latestUSD}/>
+              <LatestAssetsChart 
+                USDs={latestUSDs} 
+                dates={latestDates}
+              />
             </Grid>
             <Grid
               item
@@ -216,7 +235,7 @@ const Page = () => {
               sm={12}
               xs={12}
             >
-              <LatestAssetsTable />
+              <LatestAssetsTable assets={latestAssets}/>
             </Grid>
           </Grid>
         </Container>
