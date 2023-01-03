@@ -1,15 +1,11 @@
 import { useEffect } from 'react';
-import NextLink from 'next/link';
 import { useRouter } from 'next/router';
 import PropTypes from 'prop-types';
-import { Box, Button, Divider, Drawer, Typography, useMediaQuery } from '@mui/material';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { Box, Divider, Drawer, Typography, useMediaQuery } from '@mui/material';
 import { ChartBar as ChartBarIcon } from '../icons/chart-bar';
 import { Cog as CogIcon } from '../icons/cog';
-import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import LanIcon from '@mui/icons-material/Lan';
 import { Selector as SelectorIcon } from '../icons/selector';
-import { User as UserIcon } from '../icons/user';
 import { Logo } from './logo';
 import { NavItem } from './nav-item';
 import { useAuthContext } from '../contexts/auth-context';
@@ -19,16 +15,6 @@ const items = [
     href: '/',
     icon: (<ChartBarIcon fontSize="small" />),
     title: 'Dashboard'
-  },
-  {
-    href: '/assets',
-    icon: (<MonetizationOnIcon fontSize="small" />),
-    title: 'Assets'
-  },
-  {
-    href: '/account',
-    icon: (<UserIcon fontSize="small" />),
-    title: 'Account'
   },
   {
     href: '/servers',

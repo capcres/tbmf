@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
-import { Box, Button, ToggleButton, ToggleButtonGroup, Stack, Container, Grid } from '@mui/material';
+import { Box, Button, ToggleButton, ToggleButtonGroup, Stack, Container, Grid, Divider } from '@mui/material';
 import { TotalUSD } from '../components/dashboard/total-usd';
 import { TotalUSDT } from '../components/dashboard/total-usdt';
 import { TotalBUSD } from '../components/dashboard/total-busd';
-import { LatestAssetsChart } from '../components/dashboard/latest-assets-chart';
-import { LatestAssetsTable } from '../components/dashboard/latest-assets-table';
+import { AssetsChartTable } from '../components/dashboard/assets-chart-table';
 import { DashboardLayout } from '../components/dashboard-layout';
 import { useAuthContext } from '../contexts/auth-context';
 import axios from 'axios';
@@ -15,87 +14,70 @@ const Page = () => {
   const initialized = useRef(false);
   const [servers, setServers] = useState([]);
   const [selectedServers, setSelectedServers] = useState([]);
+  const [selectedServerIds, setSelectedServerIds] = useState([]);
   const [totalAsset, setTotalAsset] = useState({ 
     USD : {total : 0, profit : 0, ratio : 1}, 
     USDT : {total : 0, profit : 0, ratio : 1},
     BUSD : {total : 0, profit : 0, ratio : 1}
   });
-  const [latestUSDs, setLatestUSDs] = useState([]);
-  const [latestDates, setLatestDates] = useState([]);
-  const [latestAssets, setLatestAssets] = useState([]);
-
-  const handleServerSelect = (event, newFormats) => {
-    setSelectedServers(newFormats);
-  };
 
   const onUpdate = async () => {
-    var serverIds = [];
-    for (let server of servers)
+    var tmpSelectedServerIds = [];
+    for (let [index, server] of servers.entries())
     {
-      if (selectedServers.indexOf(server.name) >= 0)
+      if (selectedServers[index])
       {
-        serverIds.push(server.id);
+        tmpSelectedServerIds.push(server.id);
       }
     }
+    setSelectedServerIds(tmpSelectedServerIds);
 
-    if (serverIds.length == 0) return;
+    if (tmpSelectedServerIds.length == 0) return;
 
-    var dates = ['', '', '', '', '', '', '', ''];
-    var USDs = [0, 0, 0, 0, 0, 0, 0, 0];
-    var USDTs = [0, 0, 0, 0, 0, 0, 0, 0];
-    var BUSDs = [0, 0, 0, 0, 0, 0, 0, 0];
-    for (let server of servers)
+    var tmpLatestUSDs = [0, 0];
+    var tmpLatestUSDTs = [0, 0];
+    var tmpLatestBUSDs = [0, 0];
+    for (let [index, server] of servers.entries())
     {
-      if (selectedServers.indexOf(server.name) >= 0)
+      if (selectedServers[index])
       {
-        var res = await axios.post(`http://${process.env.NEXT_PUBLIC_TBMB_IP}/get_balance_list`, {serverId : server.id, startIndex : 0, count : 8});
+        var res = await axios.post(`http://${process.env.NEXT_PUBLIC_TBMB_IP}/get_balance_list`, {serverId : server.id, startIndex : 0, count : 2});
         server.balances = res.data.datas
 
         for (let i = 0; i < server.balances.length; i++)
         {
           let balance = server.balances[i];
-          dates[i] = balance.date;
-          USDTs[i] += balance.USDT;
-          BUSDs[i] += balance.BUSD;
-          USDs[i] += balance.USDT + balance.BUSD;
+          tmpLatestUSDTs[i] += balance.USDT;
+          tmpLatestBUSDs[i] += balance.BUSD;
+          tmpLatestUSDs[i] += balance.USDT + balance.BUSD;
         }
       }
     }
 
-    var latestAssets2 = [];
-    for (let i = 0; i < USDs.length - 1; i++)
+    var tmpLatestAssets = [];
+    for (let i = 0; i < tmpLatestUSDs.length - 1; i++)
     {
       let asset = {
-        date : dates[i],
-        totalUSD : USDs[i],
-        profitUSD : USDs[i] - USDs[i + 1],
-        ratioUSD : (USDs[i + 1] > 0) ? USDs[i] / USDs[i + 1] : 1,
-        totalUSDT : USDTs[i],
-        profitUSDT : USDTs[i] - USDTs[i + 1],
-        ratioUSDT : (USDTs[i + 1] > 0) ? USDTs[i] / USDTs[i + 1] : 1,
-        totalBUSD : BUSDs[i],
-        profitBUSD : BUSDs[i] - BUSDs[i + 1],
-        ratioBUSD : (BUSDs[i + 1] > 0) ? BUSDs[i] / BUSDs[i + 1] : 1
+        id : i + 1,
+        totalUSD : tmpLatestUSDs[i],
+        profitUSD : tmpLatestUSDs[i] - tmpLatestUSDs[i + 1],
+        ratioUSD : (tmpLatestUSDs[i + 1] > 0) ? tmpLatestUSDs[i] / tmpLatestUSDs[i + 1] : 1,
+        totalUSDT : tmpLatestUSDTs[i],
+        profitUSDT : tmpLatestUSDTs[i] - tmpLatestUSDTs[i + 1],
+        ratioUSDT : (tmpLatestUSDTs[i + 1] > 0) ? tmpLatestUSDTs[i] / tmpLatestUSDTs[i + 1] : 1,
+        totalBUSD : tmpLatestBUSDs[i],
+        profitBUSD : tmpLatestBUSDs[i] - tmpLatestBUSDs[i + 1],
+        ratioBUSD : (tmpLatestBUSDs[i + 1] > 0) ? tmpLatestBUSDs[i] / tmpLatestBUSDs[i + 1] : 1
       }
-      latestAssets2.push(JSON.parse(JSON.stringify(asset)));
+      tmpLatestAssets.push(JSON.parse(JSON.stringify(asset)));
     }
     
-    var a = latestAssets2[0];
+    var a = tmpLatestAssets[0];
     setTotalAsset({ 
       USD : { total : a.totalUSD, profit : a.profitUSD, ratio : a.ratioUSD},
       USDT : { total : a.totalUSDT, profit : a.profitUSDT, ratio : a.ratioUSDT},
       BUSD : { total : a.totalBUSD, profit : a.profitBUSD, ratio : a.ratioBUSD}
-    });    
-
-    if (USDs.length > 7)
-    {
-      USDs.splice(7, 1);
-      dates.splice(7, 1);
-    } 
-    setLatestUSDs(USDs);
-    setLatestDates(dates);
-
-    setLatestAssets(latestAssets2);
+    }); 
   }
 
   const initialize = async () => {
@@ -109,7 +91,7 @@ const Page = () => {
       serverNames.push(server.name);
     }
     setServers(servers2);
-    setSelectedServers(serverNames);
+    setSelectedServers(Array.from({length : servers2.length}, () => true));
   }
 
   useEffect(() => {
@@ -148,34 +130,42 @@ const Page = () => {
               sm={12}
               xs={12}
             >
-              <Stack 
-                direction="row" 
-                spacing={2}
+              <Grid
+                container
+                direction="row"
+                justifyContent="flex-start"
+                alignItems="center"                
+                spacing={1}
               >
-                <ToggleButtonGroup
-                  value={selectedServers}
-                  onChange={handleServerSelect}
-                  aria-label="server list"
-                >
-                  {
-                    servers.map(server => (
+                {
+                  servers.map((server, index) => (
+                    <Grid
+                      key={server.name}
+                      item
+                    >
                       <ToggleButton 
                         key={server.name} 
-                        value={server.name} 
-                        aria-label={server.name}
+                        value={server.name}
+                        selected={selectedServers[index]}
+                        onChange={()=>{selectedServers[index] = !selectedServers[index]; setSelectedServers([...selectedServers])}}
                       >
                         {server.name}
                       </ToggleButton>
-                    ))
-                  }
-                </ToggleButtonGroup>
-                <Button 
-                  variant="outlined"
-                  onClick={onUpdate}
+                    </Grid>
+                  ))
+                }
+                <Grid
+                  key='Update'
+                  item
                 >
-                  Update
-                </Button>
-              </Stack>
+                  <Button 
+                    variant="outlined"
+                    onClick={onUpdate}
+                  >
+                    Update
+                  </Button>
+                </Grid>
+              </Grid>
             </Grid>
             <Grid
               item
@@ -215,7 +205,7 @@ const Page = () => {
                 profit={totalAsset.BUSD.profit} 
                 ratio={totalAsset.BUSD.ratio}
               />
-            </Grid>          
+            </Grid>            
             <Grid
               item
               xl={12}
@@ -223,19 +213,8 @@ const Page = () => {
               sm={12}
               xs={12}
             >
-              <LatestAssetsChart 
-                USDs={latestUSDs} 
-                dates={latestDates}
-              />
-            </Grid>
-            <Grid
-              item
-              xl={12}
-              lg={12}
-              sm={12}
-              xs={12}
-            >
-              <LatestAssetsTable assets={latestAssets}/>
+              <AssetsChartTable
+                selectedServerIds={selectedServerIds} />
             </Grid>
           </Grid>
         </Container>
